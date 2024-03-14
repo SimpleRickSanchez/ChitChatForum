@@ -1,0 +1,13 @@
+{{ define "next" }}
+
+{{ if gt .lenlist 0 }}
+{{ if eq .lenlist 10}}
+<a class="lead pull-right" href="/?page={{ .pagen }}&order={{ .curorder }}&topic={{ .curtopic }}&useruuid={{ .useruuid }}&private={{ .curprivate }}">Next&gt;</a>
+{{ end }}
+<a class="lead pull-right" style="margin-left: 30px;margin-right: 30px;"> &nbsp;Page&nbsp;{{ .page }}&nbsp; </a>
+{{ if gt .page 1 }}
+  <a class="lead pull-right" href="/?page={{ .pagep }}&order={{ .curorder }}&topic={{ .curtopic }}&useruuid={{ .useruuid }}&private={{ .curprivate }}">&lt; Previous</a>
+{{ end }}
+{{ end }}
+
+{{ end }}

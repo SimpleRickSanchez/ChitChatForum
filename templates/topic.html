@@ -1,0 +1,94 @@
+{{ define "topic" }}
+<div style="margin-bottom:30px">
+    <ul class="lead horizontal-list" style="list-style-type: none;padding-left: 10px">
+        {{$ct := .curtopic}}
+        {{$uu := .useruuid}}
+        {{$cp := .curprivate}}
+        {{$co := .curorder}}
+        {{$p := .page }}
+
+        {{ range .topics}}
+        
+        {{ if lt $cp 2 }}
+        {{ if eq .Id $ct }}
+        <li class="pull-left" style="font-weight: bold;margin-bottom:20px;margin-right: 10px;;">
+            <a href="/?order={{ $co }}&topic=0&useruuid={{ $uu }}&private={{ $cp }}"> [{{ .Cate }}]
+            </a>
+        </li>
+        {{ else }}
+        <li class="pull-left" style="font-weight: bold;margin-bottom:20px;margin-right: 17px;">
+            <a href="/?order={{ $co }}&topic={{ .Id }}&useruuid={{ $uu  }}&private={{ $cp }}">{{ .Cate }}
+            </a>
+        </li>
+        {{ end }}
+        {{ else }}
+        <li class="pull-left" style="font-weight: bold;margin-bottom:20px;margin-right: 17px;">
+            <a >{{ .Cate }}</a>
+        </li>
+        {{ end }}
+
+        {{ end }}
+    </ul>
+    <br>
+    <div>
+        {{ if eq .islogined true }}
+
+        {{ if eq .curprivate 1}}
+        <a class="lead pull-left" style="margin-right: 25px;margin-left:20px"
+            href="/?page={{ .page }}&order={{ .curorder }}&topic={{ $ct }}&useruuid={{ .useruuid }}&private=0"> [My Threads]</a>
+        {{ else }}
+        <a class="lead pull-left" style="margin-right: 25px;margin-left:20px"
+            href="/?page={{ .page }}&order={{ .curorder }}&topic={{ $ct }}&useruuid={{ .useruuid }}&private=1"> My Threads</a>
+        {{ end }}
+
+
+        {{ if eq .curprivate 2}}
+        <a class="lead pull-left" style="margin-right: 25px;"
+            href="/?page={{ .page }}&order={{ .curorder }}&topic={{ $ct }}&useruuid={{ .useruuid }}&private=0"> [My Posts]</a>
+        {{ else }}
+        <a class="lead pull-left" style="margin-right: 25px;"
+            href="/?page={{ .page }}&order={{ .curorder }}&topic={{ $ct }}&useruuid={{ .useruuid }}&private=2"> My Posts</a>
+        {{ end }}
+
+
+        {{ if eq .curprivate 3}}
+        <a class="lead pull-left" style="margin-right: 25px;"
+            href="/?page={{ .page }}&vorder={{ .curorder }}&topic={{ $ct }}&useruuid={{ .useruuid }}&private=0"> [My Comments]</a>
+        {{ else }}
+        <a class="lead pull-left" style="margin-right: 25px;"
+            href="/?page={{ .page }}&order={{ .curorder }}&topic={{ $ct }}&useruuid={{ .useruuid }}&private=3"> My Comments</a>
+        {{ end }}
+
+        {{ end }}
+        
+        <a class="lead pull-right" style="margin-right: 25px;margin-right: 20px;"
+            href="/?page={{ .page }}&order=1&topic={{ $ct }}&useruuid={{ .useruuid }}&private={{ .curprivate }}">
+            {{ if eq .curorder 1}}
+            [Newest]
+            {{ else }}
+            Newest
+            {{ end }}
+        </a>
+        {{ if lt .curprivate 2}}
+        <a class="lead pull-right" style="margin-right: 25px;"
+            href="/?page={{ .page }}&order=2&topic={{ $ct }}&useruuid={{ .useruuid }}&private={{ .curprivate }}">
+            {{ if eq .curorder 2}}
+            [Most Viewed]
+            {{ else }}
+            Most Viewed
+            {{ end }}
+        </a>
+        <a class="lead pull-right" style="margin-right: 25px;"
+            href="/?page={{ .page }}&order=3&topic={{ $ct }}&useruuid={{ .useruuid }}&private={{ .curprivate }}">
+            {{ if eq .curorder 3}}
+            [Most Replied]
+            {{ else }}
+            Most Replied
+            {{ end }}
+        </a>
+        {{ end }}
+        <text class="lead pull-right" style="margin-right: 25px;">Sorted by :&nbsp; </text>
+        
+    </div>
+</div>
+{{ end }}

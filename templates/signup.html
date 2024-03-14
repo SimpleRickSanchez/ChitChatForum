@@ -1,0 +1,23 @@
+{{ define "content" }}
+<form class="form-signin" role="form" action="/user/signup_account" method="post">
+  <h2 class="form-signin-heading">
+    <i class="fa fa-comments-o">
+      ChitChat
+    </i>
+  </h2>
+  <div class="lead">Sign up for an account below.</div>
+  <div id="msg-display1" ></div>
+  <div id="msg-display2" ></div>
+  <div id="msg-display3" ></div>
+  <div id="msg-display4" ></div>
+  <input id="name" type="text" name="name" class="form-control" placeholder="Name" required autofocus>
+  <input id="email" type="email" name="email" class="form-control" placeholder="Email address" required>
+  <input id="password" type="password" name="password" class="form-control" placeholder="Password" required>
+  <br />
+  <button id="login-btn" class="btn btn-lg btn-primary btn-block" type="submit">Sign up</button>
+</form>
+<input type="hidden" id="salt" value="{{.salt}}">
+
+<script src="/static/js/crypto-js.min.js"></script>
+<script src="/static/js/signup.js"></script>
+{{ end }}
