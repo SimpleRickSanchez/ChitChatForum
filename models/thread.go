@@ -61,19 +61,19 @@ func isThreadValidToWrite(user User, thread Thread) (t ThreadErrorType, err erro
 		return ThreadErrorUser, fmt.Errorf("user %v not exists", user.Email)
 	}
 	if !IsTopicExistsByID(thread.TopicId) {
-		return ThreadErrorTopic, fmt.Errorf("topic not exists")
+		return ThreadErrorTopic, fmt.Errorf("topic not exists, %v", thread.TopicId)
 	}
 	if len(thread.Title) == 0 {
 		return ThreadErrorTitle, fmt.Errorf("title empty")
 	}
 	if len(thread.Title) > CommonStringMax {
-		return ThreadErrorTitle, fmt.Errorf("title too long")
+		return ThreadErrorTitle, fmt.Errorf("title too long %v", thread.Title)
 	}
 	if len(thread.Content) == 0 {
 		return ThreadErrorContent, fmt.Errorf("content empty")
 	}
 	if len(thread.Content) > CommonTextMax {
-		return ThreadErrorContent, fmt.Errorf("content too long")
+		return ThreadErrorContent, fmt.Errorf("content too long, %v", thread.Content)
 	}
 	return ThreadErrorNone, nil
 }
@@ -108,6 +108,10 @@ func GetThreadUuidById(threadid int) (uuid uuid.UUID) {
 	uuidStruct := UuidStruct{}
 	db.Raw("SELECT uuid FROM threads WHERE id = ?", threadid).Scan(&uuidStruct)
 	return uuidStruct.Uuid
+}
+func GetThreadIdByUuid(uuid string) (id int) {
+	db.Raw("SELECT id FROM threads WHERE uuid = UUID_TO_BIN(?)", uuid).Scan(&id)
+	return
 }
 func GetThreadTitleById(threadid int) (title string) {
 	db.Raw("SELECT title FROM threads WHERE id = ?", threadid).Scan(&title)

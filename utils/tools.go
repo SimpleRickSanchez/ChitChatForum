@@ -133,7 +133,12 @@ func RandomContent() string {
 		return ""
 	}
 	lines := strings.Split(string(data), "\n")
-	return lines[rand.Intn(len(lines))]
+	r_scale := rand.Intn(10) + 1
+	res := ""
+	for range r_scale {
+		res += lines[rand.Intn(len(lines))]
+	}
+	return res
 }
 
 func RandomThread() (title, content string) {
@@ -145,8 +150,8 @@ func RandomThread() (title, content string) {
 	lines := strings.Split(string(data), "\n")
 	randomLine := lines[rand.Intn(len(lines))]
 	parts := strings.Split(randomLine, "##")
-	title = parts[0]
-	content = parts[1]
+	title = parts[0] + RandomContent()
+	content = parts[1] + RandomContent()
 	return
 }
 

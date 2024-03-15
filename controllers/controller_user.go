@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"model"
 	"net/http"
+	"os"
 	"sync"
 	"util"
 
@@ -101,7 +102,8 @@ func (con UserController) Auth(c *gin.Context) {
 	err := c.ShouldBind(&user)
 	if err == nil {
 		if user.Auth() {
-			con.setSessionLogined(c, user.Email)
+			full_user := model.GetUserByEmail(user.Email)[0]
+			con.setSessionLogined(c, full_user)
 			c.JSON(http.StatusOK, gin.H{
 				"success": true,
 				"msg":     "Login successfully.",
@@ -120,10 +122,12 @@ func (con UserController) Auth(c *gin.Context) {
 	})
 }
 
-func (con UserController) setSessionLogined(c *gin.Context, email string) {
+func (con UserController) setSessionLogined(c *gin.Context, user model.User) {
 	session := con.getSession(c)
-	session.Set("auth", "#*$%"+email+"#*$%")
-	session.Set("useruuid", util.BINToUUIDStr(model.GetUesrUuidByEmail(email)))
+	session.Set("auth", "#*$%"+user.Email+"#*$%")
+	session.Set("useruuid", util.BINToUUIDStr(user.Uuid))
+	session.Set("userid", user.Id)
+	session.Set("useremail", user.Email)
 	session.Save()
 }
 
@@ -159,7 +163,8 @@ func (con UserController) DoSignUp(c *gin.Context) {
 		if !model.IsUserExists(user.Email) {
 			err := user.CreateUser()
 			if err == nil {
-				con.setSessionLogined(c, user.Email)
+				full_user := model.GetUserByEmail(user.Email)[0]
+				con.setSessionLogined(c, full_user)
 				c.JSON(http.StatusOK, gin.H{
 					"success": true,
 					"msg":     "Sign up sucessfully!",
@@ -186,6 +191,116 @@ func (con UserController) DoSignUp(c *gin.Context) {
 
 }
 
+func (con UserController) ForgeUser(c *gin.Context) {
+	randomUsers(1000)
+	c.JSON(http.StatusOK, gin.H{
+		"msg": "forge completed",
+	})
+}
+
+func randomUsers(n int) {
+	sem := make(chan struct{}, 100)
+	errlog := make(chan string)
+	var wg sync.WaitGroup
+
+	file, err := os.Create("errlog.txt")
+	if err != nil {
+
+		fmt.Println("Error creating file:", err)
+	}
+	defer file.Close()
+
+	pwd := "123456"
+
+	for i := range n {
+
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, sem chan struct{}, errlog chan<- string) {
+			sem <- struct{}{}
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			hasher := md5.New()
+			salt := util.CreateSalt()
+			hasher.Write([]byte(pwd + salt))
+			t_user := model.User{
+				Uuid:   util.CreateUUIDBin(),
+				Name:   fmt.Sprintf("%v_%v", i, util.RandomName()),
+				Email:  util.RandomEmail(),
+				Pwdmd5: hex.EncodeToString(hasher.Sum(nil)),
+				Salt:   salt,
+			}
+			err := t_user.CreateUser()
+			if err != nil {
+				errlog <- err.Error()
+			}
+			user := model.GetUserByEmail(t_user.Email)[0]
+
+			for range 3 {
+				rtitle, rcontent := util.RandomThread()
+				_, err := user.CreateThread(model.RandomTopicId(), rtitle, rcontent)
+				if err != nil {
+					errlog <- err.Error()
+				}
+			}
+			for range 12 {
+				rthreadid := model.RandomThreadId()
+				err := user.CreatePost(rthreadid, util.RandomContent())
+				if err != nil {
+					errlog <- err.Error()
+				}
+				model.ThreadViewCountIncre(rthreadid)
+
+			}
+			for range 25 {
+				post := model.GetPostById(model.RandomPostId())[0]
+				model.ThreadViewCountIncre(post.ThreadId)
+				t_thread := model.GetThreadById(post.ThreadId)
+
+				var possibleReplyMap = make(map[int]uuid.UUID)
+				possibleReplyMap[post.UserId] = post.Uuid // post author
+
+				for _, v := range model.GetAllCommentsToAPost(util.BINToUUIDStr(post.Uuid)) {
+					possibleReplyMap[v.UserId] = v.Uuid
+				}
+				possibleIds := util.MapKeys(possibleReplyMap)
+				r_reply_to_id := possibleIds[rand.Intn(len(possibleIds))]
+
+				err := user.CreateComment(
+					util.BINToUUIDStr(post.Uuid),
+					util.BINToUUIDStr(possibleReplyMap[r_reply_to_id]),
+					util.BINToUUIDStr(t_thread.Uuid),
+					util.RandomContent())
+				if err != nil {
+					errlog <- err.Error()
+				}
+			}
+		}(&wg, sem, errlog)
+	}
+	//closer
+	go func() {
+		wg.Wait()
+		close(sem)
+		close(errlog)
+	}()
+
+	for errstr := range errlog {
+		file.WriteString(errstr + "\n")
+	}
+
+}
+
+// func (con UserController) Killsleeper(c *gin.Context) {
+// 	SleepConnsKiller(model.GetDB())
+// }
+// func SleepConnsKiller(db *gorm.DB) {
+// 	var sleepIds []int
+// 	db.Raw("SELECT id FROM INFORMATION_SCHEMA.processlist").Scan(&sleepIds)
+// 	fmt.Printf("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  %v", len(sleepIds))
+// 	for id := range sleepIds {
+// 		db.Exec("KILL ?", id)
+// 	}
+// }
 // test only
 // func (con UserController) Test(c *gin.Context) {
 // 	users := model.QueryUser("fin7514@163.com")
@@ -206,89 +321,3 @@ func (con UserController) DoSignUp(c *gin.Context) {
 // }
 
 /*--------------------------------------------------------*/
-
-func (con UserController) ForgeUser(c *gin.Context) {
-	randomUsers(100)
-}
-
-func randomUsers(n int) {
-	sem := make(chan struct{}, 500)
-	var wg sync.WaitGroup
-
-	pwd := "123456"
-
-	for i := range n {
-		hasher := md5.New()
-		salt := util.CreateSalt()
-		hasher.Write([]byte(pwd + salt))
-		t_user := model.User{
-			Uuid:   util.CreateUUIDBin(),
-			Name:   fmt.Sprintf("%v_%v", i, util.RandomName()),
-			Email:  util.RandomEmail(),
-			Pwdmd5: hex.EncodeToString(hasher.Sum(nil)),
-			Salt:   salt,
-		}
-		wg.Add(1)
-		go func(t_user model.User, wg *sync.WaitGroup, sem chan struct{}) {
-			sem <- struct{}{}
-			defer wg.Done()
-			defer func() { <-sem }()
-
-			t_user.CreateUser()
-			user := model.GetUserByEmail(t_user.Email)[0]
-
-			for range 3 {
-				rtitle, rcontent := util.RandomThread()
-				user.CreateThread(model.RandomTopicId(), rtitle, rcontent)
-			}
-			for range 12 {
-				rthreadid := model.RandomThreadId()
-				user.CreatePost(rthreadid, util.RandomContent())
-				model.ThreadViewCountIncre(rthreadid)
-
-			}
-			for range 25 {
-				post := model.GetPostById(model.RandomPostId())[0]
-				model.ThreadViewCountIncre(post.ThreadId)
-				t_thread := model.GetThreadById(post.ThreadId)
-
-				var possibleReplyMap = make(map[int]uuid.UUID)
-				possibleReplyMap[post.UserId] = post.Uuid // post author
-
-				for _, v := range model.GetAllCommentsToAPost(util.BINToUUIDStr(post.Uuid)) {
-					possibleReplyMap[v.UserId] = v.Uuid
-				}
-				possibleIds := util.MapKeys(possibleReplyMap)
-				r_reply_to_id := possibleIds[rand.Intn(len(possibleIds))]
-
-				err := user.CreateComment(
-					post.Id,
-					r_reply_to_id,
-					util.BINToUUIDStr(post.Uuid),
-					util.BINToUUIDStr(possibleReplyMap[r_reply_to_id]),
-					util.BINToUUIDStr(t_thread.Uuid),
-					util.RandomContent())
-				if err != nil {
-					fmt.Println(err)
-				}
-			}
-		}(t_user, &wg, sem)
-	}
-	//closer
-	go func() {
-		wg.Wait()
-		close(sem)
-	}()
-}
-
-// func (con UserController) Killsleeper(c *gin.Context) {
-// 	SleepConnsKiller(model.GetDB())
-// }
-// func SleepConnsKiller(db *gorm.DB) {
-// 	var sleepIds []int
-// 	db.Raw("SELECT id FROM INFORMATION_SCHEMA.processlist").Scan(&sleepIds)
-// 	fmt.Printf("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  %v", len(sleepIds))
-// 	for id := range sleepIds {
-// 		db.Exec("KILL ?", id)
-// 	}
-// }

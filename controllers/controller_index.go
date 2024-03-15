@@ -1,9 +1,10 @@
 package controller
 
 import (
+	"fmt"
+	"middleware"
 	"model"
 	"net/http"
-	"reflect"
 	"strconv"
 	"util"
 
@@ -48,6 +49,16 @@ type CommentEntry struct {
 	Content        string    `json:"content"`
 	ReplyToContent string    `json:"reply_to_content"`
 	CreatedAt      string    `json:"created_at"`
+}
+
+type CreateInfo struct {
+	Title   string `json:"title"`
+	TopicId int    `json:"topic_id"`
+	Content string `json:"content"`
+	Tuuid   string `json:"tuuid"`
+	Puuid   string `json:"puuid"`
+	Ruuid   string `json:"ruuid"`
+	Action  string `json:"action"`
 }
 
 func (con IndexControllers) Index(c *gin.Context) {
@@ -132,14 +143,13 @@ func (con IndexControllers) Index(c *gin.Context) {
 		comments := model.GetPageCommentByUserUuid(page, userUuid)
 
 		for _, comment := range comments {
-			postOrComment := model.GetPostOrCommentByUuid(util.BINToUUIDStr(comment.ReplyToUuid))
 			entrylist = append(entrylist, CommentEntry{
 				Uuid:           comment.Uuid,
 				ThreadUuid:     comment.ThreadUuid,
 				UserName:       model.GetUserNameById(comment.UserId),
 				ReplyToName:    model.GetUserNameById(comment.ReplyToUserId),
 				Content:        comment.Content,
-				ReplyToContent: reflect.ValueOf(postOrComment).FieldByName("Content").Interface().(string),
+				ReplyToContent: model.GetContentByPostOrCommentUuid(util.BINToUUIDStr(comment.ReplyToUuid)),
 			})
 		}
 		contenttmpl = "commentindex"
@@ -169,8 +179,7 @@ func (con IndexControllers) Index(c *gin.Context) {
 	}
 
 	islogined := model.IsLogined(c)
-	t_uuid, ok := session.Get("useruuid").(string)
-	s_useruuid := t_uuid
+	s_useruuid, ok := session.Get("useruuid").(string)
 	if !ok {
 		s_useruuid = ""
 	}
@@ -192,21 +201,80 @@ func (con IndexControllers) Index(c *gin.Context) {
 	})
 }
 
-func (con IndexControllers) CreateThread(c *gin.Context) {
+func (con IndexControllers) Create(c *gin.Context) {
+	var createinfo = CreateInfo{}
+	err := c.ShouldBind(&createinfo)
+	if err != nil {
+		fmt.Println("post form not get,", err)
+		c.JSON(http.StatusOK, gin.H{
+			"msg": fmt.Sprintf("Error reading JSON body: %s", err),
+		})
+		return
+	}
+	user := middleware.GetUserIfLogined(c)
+	if user.Email == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"msg": "No user logined.",
+		})
+		return
+	}
 
-}
-func (con IndexControllers) CreatePost(c *gin.Context) {
+	fmt.Printf("%#v\n", createinfo)
 
-}
-func (con IndexControllers) CreateComment(c *gin.Context) {
-
+	switch createinfo.Action {
+	case "thread":
+		_, err = user.CreateThread(createinfo.TopicId, createinfo.Title, createinfo.Content)
+	case "post":
+		err = user.CreatePost(model.GetThreadIdByUuid(createinfo.Tuuid), createinfo.Content)
+	case "comment":
+		err = user.CreateComment(createinfo.Puuid, createinfo.Ruuid, createinfo.Tuuid, createinfo.Content)
+	default:
+		c.JSON(http.StatusOK, gin.H{
+			"msg": "Invalid action.",
+		})
+		return
+	}
+	fmt.Println("Create Error ", err)
+	msg := ""
+	if err != nil {
+		msg = err.Error()
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"msg": msg,
+	})
 }
 
 func (con IndexControllers) Thread(c *gin.Context) {
+	var page = 1
+	var lenlist = 0
+	var err error
+	var order = 1 // time desc
+
 	thread_uuid := c.Query("uuid")
 	if thread_uuid == "" {
 		c.Redirect(http.StatusFound, "/")
 		return
+	}
+
+	p := c.Query("page")
+	if p != "" {
+		page, err = strconv.Atoi(p)
+		if err != nil || page <= 0 {
+			c.Redirect(http.StatusFound, "/")
+			return
+		}
+	}
+
+	o := c.Query("order")
+	if o != "" {
+		oo, err := strconv.Atoi(o)
+		if err != nil {
+			c.Redirect(http.StatusFound, "/thread?uuid="+thread_uuid)
+			return
+		}
+		if oo == 0 {
+			order = oo
+		}
 	}
 
 	threads := model.GetThreadByUuid(thread_uuid)
@@ -226,13 +294,15 @@ func (con IndexControllers) Thread(c *gin.Context) {
 		NumPosts:  thread.NumPosts,
 		CreatedAt: thread.CreatedAtDate(),
 	}
-	posts := model.GetPagePostsByThreadId(1, thread.Id)
+	posts := model.GetPagePostsByThreadId(page, thread.Id, order)
+	lenlist = len(posts)
 	postEntries := []PostEntryWithComments{}
 	for _, post := range posts {
 		coments := model.GetAllCommentsToAPost(util.BINToUUIDStr(post.Uuid))
 		commentEntries := []CommentEntry{}
 		for _, comment := range coments {
 			commentEntries = append(commentEntries, CommentEntry{
+				Uuid:        comment.Uuid,
 				UserName:    model.GetUserNameById(comment.UserId),
 				ReplyToName: model.GetUserNameById(comment.ReplyToUserId),
 				Content:     comment.Content,
@@ -254,22 +324,22 @@ func (con IndexControllers) Thread(c *gin.Context) {
 	if !ok {
 		navbar = "public.navbar"
 	}
-	threadpage, ok := session.Get("threadpage").(string)
-	if !ok {
-		navbar = "public.thread"
-	}
 	islogined := model.IsLogined(c)
-	t_uuid, ok := session.Get("useruuid").(string)
-	s_useruuid := t_uuid
+	s_useruuid, ok := session.Get("useruuid").(string)
 	if !ok {
 		s_useruuid = ""
 	}
-	tmpl := util.ParseTemplateFiles("layout", navbar, threadpage, "emptytopic", "emptynext")
+	tmpl := util.ParseTemplateFiles("layout", navbar, "thread", "emptytopic", "emptynext")
 	tmpl.ExecuteTemplate(c.Writer, "layout", gin.H{
 		"useruuid":  s_useruuid,
 		"username":  model.GetUserNameByUuid(s_useruuid),
 		"thread":    threadfull,
 		"islogined": islogined,
 		"posts":     postEntries,
+		"pagep":     page - 1,
+		"page":      page,
+		"pagen":     page + 1,
+		"lenlist":   lenlist,
+		"curorder":  order,
 	})
 }

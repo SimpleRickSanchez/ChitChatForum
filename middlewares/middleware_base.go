@@ -5,6 +5,7 @@ import (
 	"model"
 	"net/http"
 	"time"
+	"util"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -45,14 +46,12 @@ func SetCookie(c *gin.Context) {
 
 func CheckSessionAuth(c *gin.Context) {
 	navbar := "public.navbar"
-	thread := "public.thread"
 	if IsLogined(c) {
 		navbar = "private.navbar"
-		thread = "private.thread"
+
 	}
 	session := sessions.DefaultMany(c, model.UserSession)
 	session.Set("navbar", navbar)
-	session.Set("threadpage", thread)
 	session.Save()
 }
 func IsLogined(c *gin.Context) bool {
@@ -60,4 +59,16 @@ func IsLogined(c *gin.Context) bool {
 	strAny := session.Get("auth")
 	islogined, _ := strAny.(string)
 	return len(islogined) > 5 // TODO
+}
+
+func GetUserIfLogined(c *gin.Context) (user model.User) {
+	if IsLogined(c) {
+		session := sessions.DefaultMany(c, model.UserSession)
+		return model.User{
+			Uuid:  util.UUIDStrToBin(session.Get("useruuid").(string)),
+			Id:    session.Get("userid").(int),
+			Email: session.Get("useremail").(string),
+		}
+	}
+	return model.User{}
 }

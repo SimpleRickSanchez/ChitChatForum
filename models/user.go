@@ -74,10 +74,9 @@ func (user User) isUserValidToWrite() bool {
 		util.IsValidSalt(user.Salt)
 }
 
-func GetUserByEmail(email string) []User {
-	users := []User{}
+func GetUserByEmail(email string) (users []User) {
 	db.Raw("SELECT * FROM users WHERE email = ?", email).Scan(&users)
-	return users
+	return
 }
 
 func GetUserNameById(userid int) (name string) {
@@ -201,13 +200,12 @@ func (user User) CreatePost(threadid int, content string) (err error) {
 	return
 }
 
-func (user User) CreateComment(postid, replyTo int, postUuid, replyToUuid, threadUuid, content string) (err error) {
-	if !IsPostExists(postid) {
-		return fmt.Errorf("post not exists: %v", postid)
-	}
+func (user User) CreateComment(postUuid, replyToUuid, threadUuid, content string) (err error) {
+	postid := GetPostIdByUuid(postUuid)
 	if !IsUserExists(user.Email) {
 		return fmt.Errorf("user not exists")
 	}
+	replyTo := GetUserIdByPostOrCommentUuid(replyToUuid)
 	if !IsUserExistsById(replyTo) {
 		return fmt.Errorf("the user to be replied not exists, %v %v", replyTo, postid)
 	}

@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"math/rand"
+	"reflect"
 	"time"
 	"util"
 
@@ -86,4 +87,12 @@ func GetPostOrCommentByUuid(uuid string) interface{} {
 		return comment[0]
 	}
 	return nil
+}
+func GetUserIdByPostOrCommentUuid(uuid string) (id int) {
+	id = reflect.ValueOf(GetPostOrCommentByUuid(uuid)).FieldByName("UserId").Interface().(int)
+	return
+}
+func GetContentByPostOrCommentUuid(uuid string) (content string) {
+	content = reflect.ValueOf(GetPostOrCommentByUuid(uuid)).FieldByName("Content").Interface().(string)
+	return
 }

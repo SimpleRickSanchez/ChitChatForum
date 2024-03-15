@@ -23,8 +23,14 @@ func (post *Post) CreatedAtDate() string {
 	return post.CreatedAt.Format("Jan 2, 2006 at 3:04pm")
 }
 
-func GetPagePostsByThreadId(page int, threadid int) (posts []Post) {
-	db.Raw("SELECT * FROM posts WHERE thread_id = ? ORDER BY thread_pos ASC LIMIT ?,?",
+func GetPagePostsByThreadId(page int, threadid int, order int) (posts []Post) {
+	orderstr := " DESC"
+	if order == 1 {
+		orderstr = " ASC"
+	}
+	sqlstr1 := "SELECT * FROM posts WHERE thread_id = ? ORDER BY thread_pos"
+	sqlstr2 := " LIMIT ?,?"
+	db.Raw(sqlstr1+orderstr+sqlstr2,
 		threadid,
 		PostsPerPage*(page-1),
 		PostsPerPage).Scan(&posts)
@@ -55,7 +61,13 @@ func GetPostByUuid(uuid string) (posts []Post) {
 	db.Raw("SELECT * FROM posts WHERE uuid=UUID_TO_BIN(?)", uuid).Scan(&posts)
 	return
 }
-
+func GetPostIdByUuid(uuid string) (id int) {
+	if !util.IsValidUUIDSTR(uuid) {
+		return
+	}
+	db.Raw("SELECT id FROM posts WHERE uuid=UUID_TO_BIN(?)", uuid).Scan(&id)
+	return
+}
 func IsPostExists(postId int) bool {
 	var count int
 	db.Raw("SELECT COUNT(*) FROM posts WHERE id=?", postId).Scan(&count)

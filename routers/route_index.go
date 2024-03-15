@@ -18,9 +18,7 @@ func IdexRouterInit(router *gin.Engine) {
 		indexController := controller.IndexControllers{}
 		indexRouter.GET("", indexController.Index)
 		indexRouter.GET("thread", indexController.Thread)
-		indexRouter.GET("createthread", indexController.CreateThread)
-		indexRouter.GET("createpost", indexController.CreatePost)
-		indexRouter.GET("createcomment", indexController.CreateComment)
+		indexRouter.POST("create", indexController.Create)
 	}
 
 }

@@ -18,12 +18,12 @@ var store redis.Store
 var dsn string
 
 const (
-	MaxDBOpenConn   = 1800
+	MaxDBOpenConn   = 200
 	MaxDBIdleConn   = 10
 	UserSession     = "usersession"
-	CommonTextMax   = 500
-	CommonStringMax = 255   // the limit set when creating table
-	MySQLTextMax    = 16383 // Text max is 65535bytes, 16383 characters using utf8mb4
+	CommonTextMax   = 1000 * 3
+	CommonStringMax = 255 * 3 // the limit set when creating table
+	MySQLTextMax    = 16383   // Text max is 65535bytes, 16383 characters using utf8mb4
 	UUIDLen         = 36
 	PwdMD5Len       = 32
 	SaltLen         = 64
