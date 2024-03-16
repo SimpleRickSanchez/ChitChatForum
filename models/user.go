@@ -132,17 +132,22 @@ func GetUserIdByUuid(uuid string) (id int) {
 	db.Raw("SELECT id FROM users WHERE uuid = UUID_TO_BIN(?)", uuid).Scan(&id)
 	return
 }
-func GetUesrUuidByEmail(email string) (uuid uuid.UUID) {
+func GetUesrUuidByEmail(email string) (uuid string) {
 	if !util.IsValidEmail(email) {
 		return
 	}
 	uuidStruct := UuidStruct{}
 	db.Raw("SELECT uuid FROM users WHERE email = ?", email).Scan(&uuidStruct)
-	return uuidStruct.Uuid
+	return util.BINToUUIDStr(uuidStruct.Uuid)
+}
+func (user User) GetLatestThreadUuid() (uuid string) {
+	uuidStruct := UuidStruct{}
+	db.Raw("SELECT t.uuid FROM threads t WHERE t.user_id = ? ORDER BY created_at DESC LIMIT 0,1", user.Id).Scan(&uuidStruct)
+	return util.BINToUUIDStr(uuidStruct.Uuid)
 }
 
 // Create a new thread
-func (user User) CreateThread(topicId int, title, content string) (t ThreadErrorType, err error) {
+func (user User) CreateThread(topicId int, title, content string) (err error) {
 
 	thread := Thread{
 		TopicId: topicId,
@@ -150,22 +155,24 @@ func (user User) CreateThread(topicId int, title, content string) (t ThreadError
 		Content: content,
 		UserId:  user.Id,
 	}
-	t, err = isThreadValidToWrite(user, thread)
+	t, err := isThreadValidToWrite(user, thread)
 	if t != ThreadErrorNone {
-		return t, err
-	}
-	err = db.Transaction(func(db *gorm.DB) error {
 
-		db.Exec(`INSERT INTO threads (uuid, topic_id, title, content, user_id)
+		return err
+	}
+
+	err = db.Transaction(func(db *gorm.DB) error {
+		err := db.Exec(`INSERT INTO threads (uuid, topic_id, title, content, user_id)
 			VALUES (UUID_TO_BIN(?),?,?,?,?)`,
 			util.CreateUUIDStr(),
 			topicId,
 			title,
 			content,
-			user.Id)
-		return nil
+			user.Id).Error
+		return err
 	}, Txop)
-	return ThreadErrorNone, err
+
+	return
 }
 
 func (user User) CreatePost(threadid int, content string) (err error) {

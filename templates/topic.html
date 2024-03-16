@@ -32,7 +32,8 @@
     <br>
     <div>
         {{ if eq .islogined true }}
-
+        <a class="lead pull-left" style="margin-right: 25px;margin-left:20px"
+            href="/create"> [+]Start A Threads </a>
         {{ if eq .curprivate 1}}
         <a class="lead pull-left" style="margin-right: 25px;margin-left:20px"
             href="/?page={{ .page }}&order={{ .curorder }}&topic={{ $ct }}&useruuid={{ .useruuid }}&private=0"> [My Threads]</a>

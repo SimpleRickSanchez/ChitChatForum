@@ -192,14 +192,14 @@ func (con UserController) DoSignUp(c *gin.Context) {
 }
 
 func (con UserController) ForgeUser(c *gin.Context) {
-	randomUsers(1000)
+	randomUsers(3000)
 	c.JSON(http.StatusOK, gin.H{
 		"msg": "forge completed",
 	})
 }
 
 func randomUsers(n int) {
-	sem := make(chan struct{}, 100)
+	sem := make(chan struct{}, 80)
 	errlog := make(chan string)
 	var wg sync.WaitGroup
 
@@ -238,7 +238,7 @@ func randomUsers(n int) {
 
 			for range 3 {
 				rtitle, rcontent := util.RandomThread()
-				_, err := user.CreateThread(model.RandomTopicId(), rtitle, rcontent)
+				err := user.CreateThread(model.RandomTopicId(), rtitle, rcontent)
 				if err != nil {
 					errlog <- err.Error()
 				}

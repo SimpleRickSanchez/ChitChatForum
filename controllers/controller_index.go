@@ -53,7 +53,7 @@ type CommentEntry struct {
 
 type CreateInfo struct {
 	Title   string `json:"title"`
-	TopicId int    `json:"topic_id"`
+	TopicId string `json:"topic_id"`
 	Content string `json:"content"`
 	Tuuid   string `json:"tuuid"`
 	Puuid   string `json:"puuid"`
@@ -223,14 +223,37 @@ func (con IndexControllers) Create(c *gin.Context) {
 
 	switch createinfo.Action {
 	case "thread":
-		_, err = user.CreateThread(createinfo.TopicId, createinfo.Title, createinfo.Content)
+		topicid, err := strconv.Atoi(createinfo.TopicId)
+		if err != nil || !model.IsTopicExistsByID(topicid) {
+			c.JSON(http.StatusOK, gin.H{
+				"msg":     fmt.Sprint("topic id not right", err),
+				"success": false,
+			})
+			return
+		}
+		err = user.CreateThread(topicid, createinfo.Title, createinfo.Content)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"msg":     fmt.Sprint("create thread failed", err),
+				"success": false,
+			})
+			return
+		}
+		s_uuid := user.GetLatestThreadUuid()
+		c.JSON(http.StatusOK, gin.H{
+			"msg":     "Successfully",
+			"success": true,
+			"uuid":    s_uuid,
+		})
+		return
 	case "post":
 		err = user.CreatePost(model.GetThreadIdByUuid(createinfo.Tuuid), createinfo.Content)
 	case "comment":
 		err = user.CreateComment(createinfo.Puuid, createinfo.Ruuid, createinfo.Tuuid, createinfo.Content)
 	default:
 		c.JSON(http.StatusOK, gin.H{
-			"msg": "Invalid action.",
+			"msg":     "Invalid action.",
+			"success": false,
 		})
 		return
 	}
@@ -240,7 +263,33 @@ func (con IndexControllers) Create(c *gin.Context) {
 		msg = err.Error()
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"msg": msg,
+		"msg":     msg,
+		"success": false,
+	})
+}
+func (con IndexControllers) CreateThread(c *gin.Context) {
+	islogined := model.IsLogined(c)
+	if !islogined {
+		c.Redirect(http.StatusFound, "/")
+		return
+	}
+	session := con.getSession(c)
+	navbar, ok := session.Get("navbar").(string)
+	if !ok {
+		navbar = "public.navbar"
+	}
+
+	s_useruuid, ok := session.Get("useruuid").(string)
+	if !ok {
+		s_useruuid = ""
+	}
+
+	tmpl := util.ParseTemplateFiles("layout", navbar, "new.thread", "emptytopic", "emptynext")
+	tmpl.ExecuteTemplate(c.Writer, "layout", gin.H{
+		"islogined": islogined,
+		"useruuid":  s_useruuid,
+		"username":  model.GetUserNameByUuid(s_useruuid),
+		"topics":    model.GetAllTopics(),
 	})
 }
 

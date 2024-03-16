@@ -19,7 +19,7 @@
         </div>
         {{ if eq $islogined true }}
         <a href="#" style="font-size: 0.7em;" class="pull-right show-input" data-text="Reply to {{ .thread.UserName }}"
-          tuuid="{{ .thread.Uuid }}" puuid="" ruuid="" action="post">[Reply]</a>
+          tuuid="{{ .thread.Uuid }}" puuid="" ruuid="{{ .thread.Uuid }}" action="post">[Reply]</a>
         {{ end }}
         <div class="pull-left" style="font-size: 0.7em;padding-left: 20px;">
           Replies: {{ .thread.NumPosts }} | Viewed: {{ .thread.ViewCount }}
@@ -30,14 +30,16 @@
       {{ template "replyinput" . }}
     </div>
     <div>
-      <a class="lead pull-right" style="margin-right: 25px;font-size: 1.2em" href="/thread?uuid={{ .thread.Uuid }}&page={{ .page }}&order=1">
+      <a class="lead pull-right" style="margin-right: 25px;font-size: 1.2em"
+        href="/thread?uuid={{ .thread.Uuid }}&page={{ .page }}&order=1">
         {{ if eq .curorder 1}}
         [ ASC ]
         {{ else }}
         ASC
         {{ end }}
       </a>
-      <a class="lead pull-right" style="margin-right: 25px;font-size: 1.2em" href="/thread?uuid={{ .thread.Uuid }}&page={{ .page }}&order=0">
+      <a class="lead pull-right" style="margin-right: 25px;font-size: 1.2em"
+        href="/thread?uuid={{ .thread.Uuid }}&page={{ .page }}&order=0">
         {{ if eq .curorder 0}}
         [ DESC ]
         {{ else }}
@@ -107,89 +109,11 @@
 {{ end }}
 <a class="lead pull-right" style="margin-left: 30px;margin-right: 30px;"> &nbsp;Page&nbsp;{{ .page }}&nbsp; </a>
 {{ if gt .page 1 }}
-<a class="lead pull-right" href="/thread?uuid={{ .thread.Uuid }}&page={{ .pagep }}&order={{ .curorder }}">&lt; Previous</a>
+<a class="lead pull-right" href="/thread?uuid={{ .thread.Uuid }}&page={{ .pagep }}&order={{ .curorder }}">&lt;
+  Previous</a>
 {{ end }}
 {{ end }}
-
-<script>
-  const links = document.querySelectorAll('#myList .show-input');
-  links.forEach(link => {
-    link.addEventListener('click', function (event) {
-      event.preventDefault();
-
-      document.querySelectorAll('.input-container').forEach(function (input) {
-        input.style.display = 'none';
-      });
-
-      const group = this.closest('.group');
-      const inputContainer = group.querySelector('.input-container');
-      // inputContainer.style.display = inputContainer.style.display === 'none' ? 'block' : 'none';
-      inputContainer.style.display = 'block';
-
-      const tuuid = inputContainer.querySelector(".tuuid");
-      tuuid.value = this.getAttribute('tuuid');
-      const puuid = inputContainer.querySelector(".puuid");
-      puuid.value = this.getAttribute('puuid');
-      const ruuid = inputContainer.querySelector(".ruuid");
-      ruuid.value = this.getAttribute('ruuid');
-      const action = inputContainer.querySelector(".action");
-      action.value = this.getAttribute('action');
-
-      const inputelem = inputContainer.querySelector("textarea");
-      inputelem.focus();
-      if (!inputelem.value) {
-        inputelem.placeholder = this.getAttribute('data-text');
-      }
-    });
-  });
-  const forms = document.querySelectorAll('.input-container form');
-  forms.forEach(form => {
-    const summitButton = form.querySelector('.btn-primary');
-    summitButton.addEventListener('click', async function (event) {
-      event.preventDefault();
-      form.closest('.input-container').display = 'none';
-      const contentInput = form.querySelector(".inputext");
-      content = contentInput.value;
-
-      const tuuid = form.querySelector('.tuuid').value;
-      const puuid = form.querySelector('.puuid').value;
-      const ruuid = form.querySelector('.ruuid').value;
-      const action = form.querySelector('.action').value;
-      let obj = {
-        content, tuuid, puuid, ruuid, action
-      }
-      try {
-        const response = await fetch('/create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(obj)
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const scrollPosition = {
-            x: window.scrollX || window.pageXOffset,
-            y: window.scrollY || window.pageYOffset
-          };
-          window.location.reload();
-          window.addEventListener('load', () => {
-            window.scrollTo(scrollPosition.x, scrollPosition.y);
-          });
-        } else {
-          console.error('Failed to fetch result', response.msg);
-        }
-      } catch (error) {
-        console.error('Error fetching result', error);
-      }
-    });
-
-
-  });
-</script>
-
-
+<script src="/static/js/thread.js"></script>
 {{ end }}
 
 {{ define "replyinput" }}
@@ -205,7 +129,7 @@
           <text type="hidden" name='tuuid' class="ruuid" value=""></text>
           <text type="hidden" name='action' class="action" value=""></text>
           <br />
-          <button id="summmitbutton" class="btn btn-primary pull-right" type="submit">Reply</button>
+          <button class="btn btn-primary pull-right" type="submit">Reply</button>
         </div>
       </form>
     </div>
