@@ -2,7 +2,7 @@
 
 ### 都2024年了，居然还有人手写论坛
 
-参考：go web programming - sau sheong chang
+*参考：go web programming - sau sheong chang*
 
 并不完整，只有CR，没有UD。勉强能看。
 
@@ -10,7 +10,7 @@
 ```bash
 > find . -maxdepth 1 -type d \( ! -name '.*' \) -exec sh -c 'cd "{}" && go mod tidy' \;
 ```
-- 需要在在workspace目录运行（build之后也是）
+- 需要在workspace目录运行（build之后也是）
 ```bash
 go run ./main
 ./main/chitchat-forum
