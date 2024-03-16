@@ -192,7 +192,7 @@ func (con UserController) DoSignUp(c *gin.Context) {
 }
 
 func (con UserController) ForgeUser(c *gin.Context) {
-	randomUsers(3000)
+	randomUsers(100)
 	c.JSON(http.StatusOK, gin.H{
 		"msg": "forge completed",
 	})
