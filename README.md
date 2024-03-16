@@ -6,7 +6,12 @@
 
 并不完整，只有CR，没有UD。勉强能看。
 
-对所有下一层的子目录`go mod tidy`
+- 对所有下一层的子目录`go mod tidy`
 ```bash
 > find . -maxdepth 1 -type d \( ! -name '.*' \) -exec sh -c 'cd "{}" && go mod tidy' \;
+```
+- 需要在在workspace目录运行（build之后也是）
+```bash
+go run ./main
+./main/chitchat-forum
 ```
