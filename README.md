@@ -4,8 +4,6 @@
 
 *参考：go web programming - sau sheong chang*
 
-并不完整，只有CR，没有UD。勉强能看。
-
 使用golang gin gorm搭建
 
 数据库原作用的是postgresql，这里用的mysql+redis（redis只用于储存session）
