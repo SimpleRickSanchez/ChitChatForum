@@ -12,6 +12,7 @@
 ```bash
 > find . -maxdepth 1 -type d \( ! -name '.*' \) -exec sh -c 'cd "{}" && go mod tidy' \;
 ```
+- mysql和redis的账号密码及其他配置需要填写在`config/app.ini`
 - 需要在mysql上手动
 ```bash
 mysql> source /path/to/chitchat_forum/models/setup.sql;
