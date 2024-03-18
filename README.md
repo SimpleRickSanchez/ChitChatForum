@@ -1,7 +1,5 @@
 # ChitChat Forum
 
-### 都2024年了，居然还有人手写论坛
-
 *参考：go web programming - sau sheong chang*
 
 使用golang gin gorm搭建
